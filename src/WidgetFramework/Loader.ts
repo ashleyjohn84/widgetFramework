@@ -31,7 +31,7 @@ export class Loader {
 				// read manifest and check for duplicates based on cache
 				// load resources based on manifest
 				manifest.vendorFiles.forEach(file => {
-					if (this.resourceExists(file.name) === false) {
+					if (this.resourceExists(file.name, true) === false) {
 						let resProm = this.loadResourceFile(file.name, ResourceType[file.type], true);
 						Loader.resourcePromises = Loader.resourcePromises.concat(resProm);
 					}
