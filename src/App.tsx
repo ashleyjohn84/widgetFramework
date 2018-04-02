@@ -20,6 +20,12 @@ class App extends React.Component<{}, MyState> {
 				},
 				{
 					id: 'OpportunityWidget',
+				},
+				{
+					id: 'EventTextboxWidget',
+				},
+				{
+					id: 'EventOutputWidget',
 				}
 			]
 		};
