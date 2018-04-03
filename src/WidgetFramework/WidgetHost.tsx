@@ -1,10 +1,10 @@
 import * as React from 'react';
-import WidgetRuntime from './WidgetRuntime';
+import { WidgetRuntime } from './WidgetRuntime';
 
-type MyProps = { widget: { id: string } };
-type MyState = { elemName: string, entryPoint: string, widgetId: string };
+export type MyProps = { widget: { id: string } };
+export type MyState = { elemName: string, entryPoint: string, widgetId: string };
 
-export default class WidgetHost extends React.Component<MyProps, MyState> {
+export class WidgetHost extends React.Component<MyProps, MyState> {
 	private runtime: WidgetRuntime;
 
 	constructor(props: MyProps) {

@@ -1,11 +1,11 @@
 import { Subject } from 'rxjs/Subject';
 import { filter } from 'rxjs/operators';
 
-type callback = (_: { [key: string]: any }) => void;
-type dataPayLoad = { [key: string]: any };
-type event = { name: string, data: dataPayLoad };
+export type callback = (_: { [key: string]: any }) => void;
+export type dataPayLoad = { [key: string]: any };
+export type event = { name: string, data: dataPayLoad };
 
-export default class MessagePipelineV2 {
+export class MessagePipelineV2 {
 	private static subject: Subject<event> = new Subject<event>();
 
 	static registerListeners(eventName: string, onEventReceived: callback) {
