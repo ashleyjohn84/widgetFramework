@@ -23,12 +23,14 @@ function build()
 
 function copyFilesNpmPub()
 {
-	if (!fs.existsSync(resolveApp('build/npmpackage')))
+	if (!fs.existsSync(resolveApp('npmpackage')))
 	{
-		fs.mkdirSync(resolveApp("build/npmpackage"));
+		fs.mkdirSync(resolveApp("npmpackage"));
 	}
 	console.log("copying files to npm publish folder...");
-	fs.copySync(resolveApp('build/WidgetFramework/'), resolveApp('build/npmpackage'));
+	fs.copySync(resolveApp("build"), resolveApp("npmpackage"));
+	fs.copySync(resolveApp("src/pub.js"), resolveApp("npmpackage/pub.js"));
+	fs.copySync(resolveApp("src/webpack.config.pub.js"), resolveApp("npmpackage/webpack.config.pub.js"));
 	console.log("completed copying files to npm publish folder...");
 }
 

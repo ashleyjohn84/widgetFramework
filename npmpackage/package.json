@@ -1,0 +1,22 @@
+{
+	"name": "widget-runtime",
+	"version": "1.0.23",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"postinstall": "node postInstall.js"
+	},
+	"devDependencies": {
+		"fs-extra": "^3.0.1",
+		"app-root-path": "^2.0.1",
+		"archiver": "^2.1.1",
+		"isomorphic-fetch":"^2.2.1",
+		"es6-promise":"^4.2.4"
+	},
+	"dependencies": {
+		"rxjs": "^5.5.8"
+	},
+	"author": "",
+	"license": "ISC"
+}
