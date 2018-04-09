@@ -42,7 +42,8 @@
   },
   "scripts": {
     "start": "node scripts/start.js",
-    "build": "node scripts/build.js",
+	"build": "node scripts/build.js",
+	"buildfw": "node scripts/buildfw.js",
     "test": "node scripts/test.js --env=jsdom"
   },
   "devDependencies": {

@@ -1,11 +1,14 @@
 {
   "compilerOptions": {
-    "outDir": "build/dist",
+	"declaration": true,
+	"declarationDir": "build",
+	"outDir": "build",
+	// "outFile": "widgetfoo.js",
     "module": "esnext",
     "target": "es5",
     "lib": ["es6", "dom"],
-    "sourceMap": true,
-    "allowJs": true,
+    "sourceMap": false,
+    "allowJs": false,
     "jsx": "react",
     "moduleResolution": "node",
     "rootDir": "src",
