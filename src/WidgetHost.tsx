@@ -1,13 +1,14 @@
 import * as React from 'react';
 import { WidgetRuntime } from './WidgetRuntime';
+import { WidgetProps } from './Widget';
 
 export type MyProps = { widget: { id: string } };
 export type MyState = { elemName: string, entryPoint: string, widgetId: string };
 
-export class WidgetHost extends React.Component<MyProps, MyState> {
+export class WidgetHost extends React.Component<WidgetProps, MyState> {
 	private runtime: WidgetRuntime;
 
-	constructor(props: MyProps) {
+	constructor(props: WidgetProps) {
 		super(props);
 		this.state = { elemName: '', entryPoint: '', widgetId: '' };
 	}
@@ -19,12 +20,12 @@ export class WidgetHost extends React.Component<MyProps, MyState> {
 			return (
 
 				<div id="widget-host">
-					<Comp />
+					<Comp props={this.props} />
 				</div>
 			);
 		} else {
 			this.runtime = new WidgetRuntime();
-			this.runtime.loadWidgetV2(this.props.widget.id, (widgetId, entryPoint) => {
+			this.runtime.loadWidgetV2(this.props.id, (widgetId, entryPoint) => {
 				this.setState((prevState) => ({
 					elemName: widgetId,
 					widgetId: widgetId,
@@ -33,7 +34,7 @@ export class WidgetHost extends React.Component<MyProps, MyState> {
 			});
 			return (
 				<div id="widget-host">
-					{this.props.widget.id}
+					{this.props.id}
 					{this.state.elemName}
 					<hr />
 					Loading Widget...
