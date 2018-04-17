@@ -7,9 +7,11 @@ const resolveApp = relativePath => path.resolve(appDirectory, relativePath);
 
 function build()
 {
+	let publishFlag = process.argv[2];
+	let versionPart = process.argv[3];
 	console.log("compiling widget fw...");
 	let tscPath = resolveApp("node_modules\\.bin\\tsc.cmd");
-	execCommand(tscPath + " --project " + resolveApp("tsconfig.json"), function (err)
+	execCommand(tscPath + " --project " + resolveApp("tsconfig.json"), (err) =>
 	{
 		if (err)
 		{
@@ -18,6 +20,10 @@ function build()
 		}
 		console.log("completed compiling widget fw...");
 		copyFilesNpmPub();
+		if (publishFlag && (publishFlag.toLowerCase() === "--p" || publishFlag.toLowerCase() === "--publish"))
+		{
+			updatePackageVersion(versionPart);
+		}
 	});
 }
 
@@ -34,9 +40,66 @@ function copyFilesNpmPub()
 	console.log("completed copying files to npm publish folder...");
 }
 
+function updatePackageVersion(versionPart)
+{
+	console.log("Trying to publish package to npm...");
+	if (!versionPart)
+	{
+		console.log("Please provide a version parameter (Major/m Minor/mi Patch/p)");
+		return;
+	}
+	let npmPackagePath = resolveApp("npmpackage");
+	let versionCommand = "npm version " + getVersion(versionPart) + " --prefix " + npmPackagePath;
+	let publishCommand = "npm publish --folder " + npmPackagePath;
+
+	console.log("Incrementing package version...");
+	execNpm(versionCommand, (err, stdout) =>
+	{
+		if (err)
+		{
+			console.log(err);
+			return;
+		}
+		console.log(stdout);
+		execNpm(publishCommand, (err, stdout) =>
+		{
+			if (err)
+			{
+				console.log(err);
+				return;
+			}
+			console.log("Published package to npm...");
+			console.log(stdout);
+		});
+	});
+}
+
+function getVersion(versionPart)
+{
+	switch (versionPart.toLowerCase())
+	{
+		case "m":
+			return "major";
+			break;
+		case "mi":
+			return "minor";
+		case "p":
+			return "patch";
+		default:
+			return "patch";
+			break;
+	}
+}
+
+function execNpm(npmCommand, cb)
+{
+
+	var child_process = require('child_process');
+	child_process.exec(npmCommand, cb);
+}
+
 function execCommand(cmd, cb)
 {
-	// this would be way easier on a shell/bash script :P
 	var child_process = require('child_process');
 	var parts = cmd.split(/\s+/g);
 	var p = child_process.spawn(parts[0], parts.slice(1), { stdio: 'inherit' });
