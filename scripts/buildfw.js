@@ -20,7 +20,7 @@ function build()
 		}
 		console.log("completed compiling widget fw...");
 		copyFilesNpmPub();
-		if (publishFlag && (publishFlag.toLowerCase() === "--p" || publishFlag.toLowerCase() === "--publish"))
+		if (publishFlag && (publishFlag.toLowerCase() === "p" || publishFlag.toLowerCase() === "publish"))
 		{
 			updatePackageVersion(versionPart);
 		}
