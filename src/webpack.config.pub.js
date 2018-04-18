@@ -1,9 +1,13 @@
+const autoprefixer = require('autoprefixer');
 const fs = require('fs-extra');
 const path = require('path');
 const webpack = require('webpack');
+const ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 const appDirectory = fs.realpathSync(process.cwd());
 const resolveApp = relativePath => path.resolve(appDirectory, relativePath);
+
+const extractTextPluginOptions = {};
 
 module.exports = function (env)
 {
@@ -12,7 +16,11 @@ module.exports = function (env)
 		output: {
 			library: env.widgetConfig.entryPoint,
 			path: env.outputPath,
-			filename: "[name].js"
+			filename: "[name].js",
+			//libraryTarget:"var"
+		},
+		resolve: {
+			extensions: [".js", ".ts", ".tsx"]
 		},
 		module: {
 			rules: [{
@@ -27,19 +35,57 @@ module.exports = function (env)
 						},
 					},
 				],
-			}]
+			},
+			{
+				test: /\.css$/,
+				loader: ExtractTextPlugin.extract(
+					Object.assign(
+						{
+							fallback: {
+								loader: require.resolve('style-loader'),
+								options: {
+									hmr: false,
+								},
+							},
+							use: [
+								{
+									loader: require.resolve('css-loader'),
+									options: {
+										importLoaders: 1,
+										minimize: true,
+										sourceMap: false,
+									},
+								},
+								{
+									loader: require.resolve('postcss-loader'),
+									options: {
+										// Necessary for external CSS imports to work
+										// https://github.com/facebookincubator/create-react-app/issues/2677
+										ident: 'postcss',
+										plugins: () => [
+											require('postcss-flexbugs-fixes'),
+											autoprefixer({
+												browsers: [
+													'>1%',
+													'last 4 versions',
+													'Firefox ESR',
+													'not ie < 9', // React doesn't support IE8 anyway
+												],
+												flexbox: 'no-2009',
+											}),
+										],
+									},
+								},
+							],
+						},
+						extractTextPluginOptions
+					)
+				),
+				// Note: this won't work without `new ExtractTextPlugin()` in `plugins`.
+			}
+			]
 		},
-		externals: {
-			'react': 'React',
-			'react-dom': 'ReactDOM',
-			'rxjs': 'Rxjs'
-		},
-		plugins: [
-			new webpack.optimize.CommonsChunkPlugin({
-				name: "vendor_" + env.widgetConfig.widgetId,
-				minChunks: Infinity
-			})
-		]
+		externals: env.externals
 	}
 	return config;
 }
@@ -47,20 +93,6 @@ module.exports = function (env)
 function createEntryNode(customConfig)
 {
 	let entryPoint = {};
-	let vendorModules = [];
-	// for (let i = 0; i < customConfig.files.length; i++)
-	// {
-	// 	if (customConfig.files[i].type === 'Script')
-	// 	{
-	// 		entryPoint[customConfig.widgetId] = resolveApp(customConfig.files[i].path)
-	// 	}
-	// }
 	entryPoint[customConfig.widgetId] = resolveApp(customConfig.files[0].path);
-	for (let i = 0; i < customConfig.vendorFiles.length; i++)
-	{
-		vendorModules = vendorModules.concat(customConfig.vendorFiles[i]);
-	}
-	entryPoint["vendor_" + customConfig.widgetId] = vendorModules;
-	// console.log(JSON.stringify(entryPoint));
 	return entryPoint;
 }

@@ -11,7 +11,6 @@ const pathPrefix = "";
 const outputPath = pathPrefix + 'build';
 const appDirectory = fs.realpathSync(process.cwd());
 const resolveApp = relativePath => path.resolve(appDirectory, relativePath);
-const vendorFilesDirectoryPath = path.join(resolveApp(outputPath), "vendor");
 const widgetZipName = "widget.zip";
 
 (function ()
@@ -22,21 +21,24 @@ const widgetZipName = "widget.zip";
 function packageComponent()
 {
 	const configPath = pathPrefix + 'widgetconfig.json';
-	//read custom config
 	readWidgetConfigFile(configPath).then((widgetConfig) =>
 	{
-		//create webpack config and compile
-		compileWithWebpack(widgetConfig, outputPath).then(() =>
+		let wpEnv = {
+			sourceDirectory: resolveApp("src"),
+			widgetConfig: widgetConfig,
+			outputPath: resolveApp(outputPath)
+		};
+		wpEnv.externals = getExternalsForWebpack(widgetConfig);
+		compileWithWebpack(wpEnv).then(() =>
 		{
-			// //get the required vendor lib files
-			// copyVendorLibsToOutput(widgetConfig, outputPath);\
+			copyVendorLibsToOutput(widgetConfig, outputPath);
+			
 			copyOtherAssetsToOutput(widgetConfig, outputPath);
-			//create a manifest file from custom config
+			
 			createManifestFile(widgetConfig, outputPath);
-			//create a zip with all the files
+			
 			createZipForUpload(outputPath).then(() =>
 			{
-				//convert to byte[] and send to mgmnt endpoint
 				let zipBytes = generateByteArray(outputPath);
 				publishToRepo(widgetConfig, zipBytes).then((response) =>
 				{
@@ -59,6 +61,37 @@ function packageComponent()
 		{ console.log(error); });
 }
 
+function getExternalsPlugin(widgetConfig, outputPath)
+{
+	const HtmlWebpackExternalsPlugin = require('html-webpack-externals-plugin');
+	return [new HtmlWebpackExternalsPlugin({
+		outputPath: resolveApp(outputPath),
+		// See API section
+		externals: getExternalsForPlugin(widgetConfig)
+	})];
+}
+
+function getExternalsForPlugin(widgetConfig)
+{
+	let externals = [];
+	for (let i = 0; i < widgetConfig.externals.length; i++)
+	{
+		externals.push(widgetConfig.externals[i]);
+	}
+	return externals;
+}
+
+function getExternalsForWebpack(widgetconfig)
+{
+	let externals = {};
+	externals["react"] = "React";
+	externals["react-dom"] = "ReactDOM";
+	externals["rxjs"] = "Rxjs";
+	// externals["rxjs/Subject"] = "Subject";
+	// externals["rxjs/operators"] = "filter";
+	return externals;
+}
+
 function readWidgetConfigFile(configPath)
 {
 	return new Promise((resolve, reject) =>
@@ -78,13 +111,8 @@ function readWidgetConfigFile(configPath)
 
 }
 
-function compileWithWebpack(widgetConfig, outputPath)
+function compileWithWebpack(wpEnv)
 {
-	let wpEnv = {
-		sourceDirectory: resolveApp("src"),
-		widgetConfig: widgetConfig,
-		outputPath: resolveApp(outputPath)
-	};
 	let compiler = webpack(wpConfig(wpEnv));
 	return new Promise((resolve, reject) =>
 	{
@@ -112,28 +140,42 @@ function copyOtherAssetsToOutput(widgetConfig, outputPath)
 	}
 }
 
-// function copyVendorLibsToOutput(widgetConfig, outputPath)
-// {
-// 	if (!fs.existsSync(vendorFilesDirectoryPath))
-// 	{
-// 		fs.mkdirSync(vendorFilesDirectoryPath);
-// 	}
-// 	for (let i = 0; i < widgetConfig.vendorFiles.length; i++)
-// 	{
-// 		fs.copySync(resolveApp(widgetConfig.vendorFiles[i].path), vendorFilesDirectoryPath);
-// 	}
-// }
+function copyVendorLibsToOutput(widgetConfig, outputPath)
+{
+	for (let i = 0; i < widgetConfig.externals.length; i++)
+	{
+		fs.copySync(path.join(outputPath, widgetConfig.externals[i].module, widgetConfig.externals[i].module + ".js"), path.join(outputPath, widgetConfig.externals[i].module + ".js"));
+	}
+	// if (!fs.existsSync(vendorFilesDirectoryPath))
+	// {
+	// 	fs.mkdirSync(vendorFilesDirectoryPath);
+	// }
+	// for (let i = 0; i < widgetConfig.vendorFiles.length; i++)
+	// {
+	// 	fs.copySync(resolveApp(widgetConfig.vendorFiles[i].path), vendorFilesDirectoryPath);
+	// }
+}
 
 function createManifestFile(widgetConfig, outputPath)
 {
 	var manifest = {};
 	manifest["widgetId"] = widgetConfig.widgetId;
 	manifest["entryPoint"] = widgetConfig.entryPoint;
-	manifest["vendorFiles"] = [{ Name: "vendor_" + widgetConfig.widgetId + ".js", type: "Script" }];  //generateFilesList(vendorFilesDirectoryPath);
+	manifest["vendorFiles"] = getVendorFilesListForManifest(widgetConfig); //[{ Name: "vendor_" + widgetConfig.widgetId + ".js", type: "Script" }];  //generateFilesList(vendorFilesDirectoryPath);
 	manifest["files"] = generateFilesListForManifest(resolveApp(outputPath), widgetConfig);
 	manifest["version"] = widgetConfig.version;
-	let manifestJsonString = JSON.stringify(manifest);
+	let manifestJsonString = JSON.stringify(manifest, null, "\t");
 	fs.writeFileSync(path.join(outputPath, 'manifest.json'), manifestJsonString);
+}
+
+function getVendorFilesListForManifest(widgetConfig)
+{
+	let vendorFiles = [];
+	for (let i = 0; i < widgetConfig.externals.length; i++)
+	{
+		vendorFiles = vendorFiles.concat(widgetConfig.externals[i].module + ".js");
+	}
+	return vendorFiles;
 }
 
 function generateFilesListForManifest(dirPath, widgetConfig)
@@ -178,9 +220,10 @@ function createZipForUpload(outputPath)
 		});
 		archive.pipe(output);
 		let files = fs.readdirSync(resolveApp(outputPath));
+
 		for (let i = 0; i < files.length; i++)
 		{
-			if (!files[i].endsWith(".zip"))
+			if (files[i].endsWith(".js") || files[i].endsWith(".css") || files[i].endsWith(".json"))
 			{
 				archive.file(path.join(outputPath, files[i]), { name: files[i] });
 			}
@@ -188,7 +231,6 @@ function createZipForUpload(outputPath)
 		archive.finalize();
 	});
 }
-
 
 function generateByteArray(filePath)
 {
